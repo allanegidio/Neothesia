@@ -89,6 +89,38 @@ pub mod menu {
             _ => "Tracks".into(),
         }
     }
+
+    pub fn watch() -> String {
+        match LOCAL.as_str() {
+            "pl" => "Oglądaj".into(),
+            "de" => "Zuschauen".into(),
+            _ => "Watch".into(),
+        }
+    }
+
+    pub fn right_hand() -> String {
+        match LOCAL.as_str() {
+            "pl" => "Prawa ręka".into(),
+            "de" => "Rechte Hand".into(),
+            _ => "Right Hand".into(),
+        }
+    }
+
+    pub fn left_hand() -> String {
+        match LOCAL.as_str() {
+            "pl" => "Lewa ręka".into(),
+            "de" => "Linke Hand".into(),
+            _ => "Left Hand".into(),
+        }
+    }
+
+    pub fn both_hands() -> String {
+        match LOCAL.as_str() {
+            "pl" => "Obie ręce".into(),
+            "de" => "Beide Hände".into(),
+            _ => "Both Hands".into(),
+        }
+    }
 }
 
 pub mod freeplay {
