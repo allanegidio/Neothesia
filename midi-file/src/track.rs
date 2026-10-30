@@ -1,4 +1,4 @@
-use midly::{MidiMessage, TrackEvent, TrackEventKind, num::u4};
+use midly::{MetaMessage, MidiMessage, TrackEvent, TrackEventKind, num::u4};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use crate::tempo_track::TempoTrack;
@@ -40,6 +40,7 @@ pub struct MidiTrack {
 
     pub track_id: usize,
     pub track_color_id: usize,
+    pub name: Option<String>,
 
     pub programs: Arc<[ProgramEvent]>,
     pub has_drums: bool,
@@ -67,6 +68,7 @@ impl MidiTrack {
         Self {
             track_id,
             track_color_id,
+            name: track_name(track_events),
             notes: notes.into(),
             events: events.into(),
             programs: programs.into(),
@@ -74,6 +76,19 @@ impl MidiTrack {
             has_other_than_drums,
         }
     }
+}
+
+fn track_name(track_events: &[TrackEvent]) -> Option<String> {
+    let name = track_events.iter().find_map(|event| match event.kind {
+        TrackEventKind::Meta(MetaMessage::TrackName(name)) => Some(name),
+        _ => None,
+    })?;
+
+    let name = String::from_utf8_lossy(name)
+        .trim_matches(|c: char| c.is_whitespace() || c.is_control())
+        .to_string();
+
+    (!name.is_empty()).then_some(name)
 }
 
 struct NoteInfo {
@@ -211,4 +226,31 @@ fn build(
         .collect();
 
     (events, builder)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn name_event(name: &[u8]) -> TrackEvent<'_> {
+        TrackEvent {
+            delta: 0.into(),
+            kind: TrackEventKind::Meta(MetaMessage::TrackName(name)),
+        }
+    }
+
+    #[test]
+    fn first_track_name_is_trimmed_and_decoded_lossily() {
+        assert_eq!(
+            track_name(&[name_event(b" M\xc3\xa3o direita\0"), name_event(b"Piano")]),
+            Some("M\u{e3}o direita".to_string())
+        );
+        // Latin-1 instead of UTF-8
+        assert_eq!(
+            track_name(&[name_event(b"M\xe3o esquerda")]),
+            Some("M\u{fffd}o esquerda".to_string())
+        );
+        assert_eq!(track_name(&[name_event(b" \0\0")]), None);
+        assert_eq!(track_name(&[]), None);
+    }
 }
