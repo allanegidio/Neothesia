@@ -176,7 +176,7 @@ fn track_card(
         nuon::Color::new_u8(color.0, color.1, color.2, 1.0)
     };
 
-    let title = if track.has_drums && !track.has_other_than_drums {
+    let instrument = if track.has_drums && !track.has_other_than_drums {
         "Percussion"
     } else {
         let instrument_id = track
@@ -187,7 +187,12 @@ fn track_card(
         midi_file::INSTRUMENT_NAMES[instrument_id]
     };
 
-    let subtitle = format!("{} Notes", track.notes.len());
+    let notes = format!("{} Notes", track.notes.len());
+
+    let (title, subtitle) = match &track.name {
+        Some(name) => (name.as_str(), format!("{instrument}, {notes}")),
+        None => (instrument, notes),
+    };
 
     nuon::quad()
         .size(card_w, card_h)
