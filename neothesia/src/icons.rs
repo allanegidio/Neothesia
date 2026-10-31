@@ -64,14 +64,6 @@ pub fn save_icon() -> &'static str {
     "\u{f7D9}"
 }
 
-pub fn volume_icon() -> &'static str {
-    "\u{F610}"
-}
-
-pub fn volume_mute_icon() -> &'static str {
-    "\u{F60C}"
-}
-
 pub fn octave_lines_icon() -> &'static str {
     "\u{E800}"
 }

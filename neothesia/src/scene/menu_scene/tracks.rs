@@ -5,10 +5,10 @@ use std::hash::Hash;
 use crate::{
     context::Context,
     locals,
-    song::{PlayerConfig, Practice, SongConfig, TrackConfig},
+    song::{PlayerConfig, TrackConfig},
 };
 
-use super::{icons, neo_btn_icon, settings::segmented_control, state};
+use super::{icons, neo_btn_icon, state};
 
 pub const CARD_W: f32 = 344.0;
 pub const CARD_H: f32 = 126.0;
@@ -54,22 +54,30 @@ impl super::MenuScene {
                 .build(ui, |ui| {
                     let gap = 14.0;
 
-                    let mut tracks = song
+                    let mut tracks: Vec<_> = song
                         .file
                         .tracks
                         .iter()
                         .filter(|t| !t.notes.is_empty())
-                        .enumerate();
+                        .collect();
 
-                    let layout = CardsLayout::new(win_w, tracks.clone().count());
+                    if let Some(hands) = song.config.hands {
+                        // Left hand first, then right hand, like on the keyboard
+                        tracks.sort_by_key(|t| {
+                            if t.track_id == hands.left {
+                                0
+                            } else if t.track_id == hands.right {
+                                1
+                            } else {
+                                2
+                            }
+                        });
+                    }
+
+                    let layout = CardsLayout::new(win_w, tracks.len());
+                    let mut tracks = tracks.into_iter().enumerate();
 
                     let top_margin = 60.0;
-
-                    nuon::translate()
-                        .x(nuon::center_x(win_w, layout.width))
-                        .build(ui, |ui| {
-                            self::practice_row(ui, &mut song.config, layout.width, top_margin);
-                        });
 
                     nuon::translate().y(top_margin).add_to_current(ui);
 
@@ -86,9 +94,9 @@ impl super::MenuScene {
 
                                     let config = &song.config.tracks[track.track_id];
                                     let hand = song.config.hands.and_then(|hands| {
-                                        if track.track_id == hands.right() {
+                                        if track.track_id == hands.right {
                                             Some(locals::menu::right_hand())
-                                        } else if track.track_id == hands.left() {
+                                        } else if track.track_id == hands.left {
                                             Some(locals::menu::left_hand())
                                         } else {
                                             None
@@ -161,60 +169,6 @@ impl CardsLayout {
                 _ => LAYOUT_1,
             },
         }
-    }
-}
-
-fn practice_row(ui: &mut nuon::Ui, config: &mut SongConfig, row_w: f32, row_h: f32) {
-    if config.hands.is_none() {
-        return;
-    }
-
-    let btn_size = 33.0;
-    let gap = 10.0;
-
-    let labels = Practice::ALL.map(|practice| match practice {
-        Practice::Watch => locals::menu::watch(),
-        Practice::RightHand => locals::menu::right_hand(),
-        Practice::LeftHand => locals::menu::left_hand(),
-        Practice::BothHands => locals::menu::both_hands(),
-    });
-    let practice = config.practice();
-    let selected = Practice::ALL.iter().position(|p| Some(*p) == practice);
-
-    let selector_w = row_w - btn_size - gap;
-    // Picking the current practice again must not unmute the other hand
-    if let Some(i) = segmented_control(ui, "practice", selector_w, row_h, &labels, selected)
-        && practice != Some(Practice::ALL[i])
-    {
-        config.set_practice(Practice::ALL[i]);
-    }
-
-    let Some(other_hand) = config.other_hand() else {
-        return;
-    };
-    let player = &mut config.tracks[other_hand].player;
-    let muted = *player == PlayerConfig::Mute;
-
-    if nuon::button()
-        .id("mute_other_hand")
-        .pos(row_w - btn_size, nuon::center_y(row_h, btn_size))
-        .size(btn_size, btn_size)
-        .color([12, 12, 14])
-        .hover_color([37, 35, 42])
-        .preseed_color([47, 45, 54])
-        .border_radius([8.0; 4])
-        .icon(if muted {
-            icons::volume_mute_icon()
-        } else {
-            icons::volume_icon()
-        })
-        .build(ui)
-    {
-        *player = if muted {
-            PlayerConfig::Auto
-        } else {
-            PlayerConfig::Mute
-        };
     }
 }
 

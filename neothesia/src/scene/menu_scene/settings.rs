@@ -108,13 +108,13 @@ fn note_naming_label(naming: NoteNaming) -> String {
     [0, 2, 4].map(|note| naming.note_name(note)).join(" ")
 }
 
-pub(super) fn segmented_control(
+fn segmented_control(
     ui: &mut nuon::Ui,
     id: &str,
     row_w: f32,
     row_h: f32,
     labels: &[String],
-    selected: Option<usize>,
+    selected: usize,
 ) -> Option<usize> {
     let h = 33.0;
     let padding = 3.0;
@@ -150,7 +150,7 @@ pub(super) fn segmented_control(
     let mut segment_x = x + padding;
 
     for (i, (layout, segment_w)) in layouts.into_iter().zip(widths).enumerate() {
-        let color = if selected == Some(i) {
+        let color = if i == selected {
             [74, 68, 88, 255]
         } else {
             [0; 4]
@@ -161,12 +161,12 @@ pub(super) fn segmented_control(
             .pos(segment_x, y + padding)
             .size(segment_w, h - padding * 2.0)
             .color(color)
-            .hover_color(if selected == Some(i) {
+            .hover_color(if i == selected {
                 color
             } else {
                 [37, 35, 42, 255]
             })
-            .preseed_color(if selected == Some(i) {
+            .preseed_color(if i == selected {
                 color
             } else {
                 [47, 45, 54, 255]
@@ -595,7 +595,8 @@ impl super::MenuScene {
                 let labels: Vec<_> = KeyboardSize::ALL.iter().map(|size| size.label()).collect();
                 let selected_idx = KeyboardSize::ALL
                     .iter()
-                    .position(|size| *size == self.state.keyboard_size);
+                    .position(|size| *size == self.state.keyboard_size)
+                    .unwrap_or_default();
 
                 if let Some(i) =
                     segmented_control(ui, "keyboard-size", row_w, row_h, &labels, selected_idx)
@@ -632,7 +633,8 @@ impl super::MenuScene {
                     .collect();
                 let selected_idx = NoteNaming::ALL
                     .iter()
-                    .position(|naming| *naming == ctx.config.note_naming());
+                    .position(|naming| *naming == ctx.config.note_naming())
+                    .unwrap_or_default();
 
                 if let Some(i) =
                     segmented_control(ui, "note-naming", row_w, row_h, &labels, selected_idx)

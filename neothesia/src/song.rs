@@ -16,23 +16,6 @@ pub struct TrackConfig {
     pub visible: bool,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum Practice {
-    Watch,
-    RightHand,
-    LeftHand,
-    BothHands,
-}
-
-impl Practice {
-    pub const ALL: [Self; 4] = [
-        Self::Watch,
-        Self::RightHand,
-        Self::LeftHand,
-        Self::BothHands,
-    ];
-}
-
 const HAND_NAMES: [(&str, &str); 8] = [
     ("right", "left"),
     ("rh", "lh"),
@@ -46,8 +29,8 @@ const HAND_NAMES: [(&str, &str); 8] = [
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Hands {
-    right: usize,
-    left: usize,
+    pub right: usize,
+    pub left: usize,
 }
 
 impl Hands {
@@ -96,14 +79,6 @@ impl Hands {
             left: left.track_id,
         })
     }
-
-    pub fn right(self) -> usize {
-        self.right
-    }
-
-    pub fn left(self) -> usize {
-        self.left
-    }
 }
 
 fn average_pitch(track: &MidiTrack) -> f32 {
@@ -133,60 +108,6 @@ impl SongConfig {
         Self {
             tracks: tracks.into(),
             hands,
-        }
-    }
-
-    pub fn practice(&self) -> Option<Practice> {
-        let hands = self.hands?;
-
-        let others_auto = self
-            .tracks
-            .iter()
-            .filter(|track| track.track_id != hands.right && track.track_id != hands.left)
-            .all(|track| track.player == PlayerConfig::Auto);
-
-        if !others_auto {
-            return None;
-        }
-
-        let right = self.tracks[hands.right].player;
-        let left = self.tracks[hands.left].player;
-
-        match (right, left) {
-            (PlayerConfig::Auto, PlayerConfig::Auto) => Some(Practice::Watch),
-            (PlayerConfig::Human, PlayerConfig::Human) => Some(Practice::BothHands),
-            (PlayerConfig::Human, _) => Some(Practice::RightHand),
-            (_, PlayerConfig::Human) => Some(Practice::LeftHand),
-            _ => None,
-        }
-    }
-
-    pub fn set_practice(&mut self, practice: Practice) {
-        let Some(hands) = self.hands else {
-            return;
-        };
-
-        let (right, left) = match practice {
-            Practice::Watch => (PlayerConfig::Auto, PlayerConfig::Auto),
-            Practice::RightHand => (PlayerConfig::Human, PlayerConfig::Auto),
-            Practice::LeftHand => (PlayerConfig::Auto, PlayerConfig::Human),
-            Practice::BothHands => (PlayerConfig::Human, PlayerConfig::Human),
-        };
-
-        for track in self.tracks.iter_mut() {
-            track.player = PlayerConfig::Auto;
-        }
-        self.tracks[hands.right].player = right;
-        self.tracks[hands.left].player = left;
-    }
-
-    pub fn other_hand(&self) -> Option<usize> {
-        let hands = self.hands?;
-
-        match self.practice()? {
-            Practice::RightHand => Some(hands.left),
-            Practice::LeftHand => Some(hands.right),
-            Practice::Watch | Practice::BothHands => None,
         }
     }
 }

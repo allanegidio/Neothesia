@@ -90,14 +90,6 @@ pub mod menu {
         }
     }
 
-    pub fn watch() -> String {
-        match LOCAL.as_str() {
-            "pl" => "Oglądaj".into(),
-            "de" => "Zuschauen".into(),
-            _ => "Watch".into(),
-        }
-    }
-
     pub fn right_hand() -> String {
         match LOCAL.as_str() {
             "pl" => "Prawa ręka".into(),
@@ -111,14 +103,6 @@ pub mod menu {
             "pl" => "Lewa ręka".into(),
             "de" => "Linke Hand".into(),
             _ => "Left Hand".into(),
-        }
-    }
-
-    pub fn both_hands() -> String {
-        match LOCAL.as_str() {
-            "pl" => "Obie ręce".into(),
-            "de" => "Beide Hände".into(),
-            _ => "Both Hands".into(),
         }
     }
 }
