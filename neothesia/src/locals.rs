@@ -89,6 +89,22 @@ pub mod menu {
             _ => "Tracks".into(),
         }
     }
+
+    pub fn right_hand() -> String {
+        match LOCAL.as_str() {
+            "pl" => "Prawa ręka".into(),
+            "de" => "Rechte Hand".into(),
+            _ => "Right Hand".into(),
+        }
+    }
+
+    pub fn left_hand() -> String {
+        match LOCAL.as_str() {
+            "pl" => "Lewa ręka".into(),
+            "de" => "Linke Hand".into(),
+            _ => "Left Hand".into(),
+        }
+    }
 }
 
 pub mod freeplay {

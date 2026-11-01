@@ -4,6 +4,7 @@ use std::hash::Hash;
 
 use crate::{
     context::Context,
+    locals,
     song::{PlayerConfig, TrackConfig},
 };
 
@@ -53,14 +54,28 @@ impl super::MenuScene {
                 .build(ui, |ui| {
                     let gap = 14.0;
 
-                    let mut tracks = song
+                    let mut tracks: Vec<_> = song
                         .file
                         .tracks
                         .iter()
                         .filter(|t| !t.notes.is_empty())
-                        .enumerate();
+                        .collect();
 
-                    let layout = CardsLayout::new(win_w, tracks.clone().count());
+                    if let Some(hands) = song.config.hands {
+                        // Left hand first, then right hand, like on the keyboard
+                        tracks.sort_by_key(|t| {
+                            if t.track_id == hands.left {
+                                0
+                            } else if t.track_id == hands.right {
+                                1
+                            } else {
+                                2
+                            }
+                        });
+                    }
+
+                    let layout = CardsLayout::new(win_w, tracks.len());
+                    let mut tracks = tracks.into_iter().enumerate();
 
                     let top_margin = 60.0;
 
@@ -78,6 +93,15 @@ impl super::MenuScene {
                                     };
 
                                     let config = &song.config.tracks[track.track_id];
+                                    let hand = song.config.hands.and_then(|hands| {
+                                        if track.track_id == hands.right {
+                                            Some(locals::menu::right_hand())
+                                        } else if track.track_id == hands.left {
+                                            Some(locals::menu::left_hand())
+                                        } else {
+                                            None
+                                        }
+                                    });
 
                                     match self::track_card(
                                         ctx,
@@ -88,6 +112,7 @@ impl super::MenuScene {
                                         }),
                                         track,
                                         config,
+                                        hand,
                                     ) {
                                         TrackCardEvent::PlayerConfig(player) => {
                                             song.config.tracks[track.track_id].player = player;
@@ -160,6 +185,7 @@ fn track_card(
     id: impl Into<nuon::Id>,
     track: &MidiTrack,
     config: &TrackConfig,
+    hand: Option<String>,
 ) -> TrackCardEvent {
     let card_w = CARD_W;
     let card_h = CARD_H;
@@ -189,9 +215,10 @@ fn track_card(
 
     let notes = format!("{} Notes", track.notes.len());
 
-    let (title, subtitle) = match &track.name {
-        Some(name) => (name.as_str(), format!("{instrument}, {notes}")),
-        None => (instrument, notes),
+    let (title, subtitle) = match (hand, track.name.as_deref()) {
+        (Some(hand), name) => (hand, format!("{}, {notes}", name.unwrap_or(instrument))),
+        (None, Some(name)) => (name.to_string(), format!("{instrument}, {notes}")),
+        (None, None) => (instrument.to_string(), notes),
     };
 
     nuon::quad()
