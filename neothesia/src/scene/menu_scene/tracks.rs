@@ -115,7 +115,15 @@ impl super::MenuScene {
                                         hand,
                                     ) {
                                         TrackCardEvent::PlayerConfig(player) => {
-                                            song.config.tracks[track.track_id].player = player;
+                                            let track_config =
+                                                &mut song.config.tracks[track.track_id];
+                                            // A muted track shows no notes and presses no keys
+                                            if player == PlayerConfig::Mute {
+                                                track_config.visible = false;
+                                            } else if track_config.player == PlayerConfig::Mute {
+                                                track_config.visible = true;
+                                            }
+                                            track_config.player = player;
                                         }
                                         TrackCardEvent::SetVisible(visible) => {
                                             song.config.tracks[track.track_id].visible = visible;
